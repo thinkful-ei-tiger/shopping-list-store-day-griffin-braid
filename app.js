@@ -69,8 +69,29 @@ function main() {
 
 // These functions return HTML templates
 function questionTemplate() {
+  let answerTemp = ``;
+  let questionTemp = store.questions[store.questionNumber];
+
+  for (let i = 0; i < questionTemp.answers.length; i++) {
+    answerTemp += `<li><input type="radio" name="answer" value="${questionTemp.answers[i]}" required>
+    <label>${questionTemp.answers[i]}</label>
+   </li>`;
+
+  }
   // return html with the question in the title and the answers as radio buttons
-  console.log('questionTemplate');
+  let questionsPage = `
+  <div class="container">
+    <h4>${questionTemp.question}</h4>
+  <form>
+
+  <ul>
+    ${answerTemp}
+  <ul>  
+    <button class="js-submit" type="submit">Submit</button>
+  </form>
+  `;
+
+  return questionsPage;
   // get score value
   scoreTemplate();
 }
@@ -87,10 +108,21 @@ function startPageTemplate() {
 
 function scoreTemplate() {
   //  calculate the score and return a html with correct format
-  console.log('run scoreTemplate');
+  let wrongs = store.questionNumber + 1 - store.score;
+  return `<p>Your Score: </p>
+          <ul>
+          <li>Correct: ${store.score}</li>
+          <li>Incorrect:${wrongs}</li>
+          </ul>`;
 }
 
 function rightAnswerTemplate() {
+  let rightAnswer = `   <div class="container">
+  <h2>That is correct!</h2>
+  ${scoreTemplate()}
+  <button class='js-next-button'>Next</button>
+</div>`;
+  $('main').html(rightAnswer);
   // Display correct on title
   // show score
   // next button
@@ -98,6 +130,16 @@ function rightAnswerTemplate() {
 
 function wrongAnswerTemplate() {
   // Display "wrong" on title
+  let wrongAnswer = `<div class="container">
+    <h2>Ouch! That is incorrect!</h2>
+    <p>You got this, keep going!</p>
+    <p>The correct answer is: <b> ${
+      store.questions[store.questionNumber].correctAnswer
+    } </b>
+    ${scoreTemplate()}
+    <button class='js-next-button'>Next</button>
+    </div>`;
+  $('main').html(wrongAnswer);
   // show the right answer
   // next button
 }
@@ -138,6 +180,20 @@ function onClickStart() {
 
 function onSubmit() {
   //  if question is correct render to correct page
+  $('main').on('submit', 'form', (evt) => {
+    evt.preventDefault();
+    if (
+      $("input[type='radio']:checked").val() ===
+      store.questions[store.questionNumber].correctAnswer
+    ) {
+      store.score++;
+      console.log('it is right');
+      rightAnswerTemplate();
+    } else {
+      console.log('wrong');
+      wrongAnswerTemplate();
+    }
+  });
   // else render to wrong page
   // increment question number
   // render
