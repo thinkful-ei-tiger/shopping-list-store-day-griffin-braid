@@ -1,58 +1,129 @@
-let store = [
-  {name: 'bread', completed: false},
-  {name: 'milk', completed: false},
-  {name: 'apples', completed: false},
-  {name: 'oranges', completed: false}
-]
+let store = {
+  items: [ {id: cuid(), name: 'bread', completed: false},
+           {id: cuid(), name: 'milk', completed: false},
+           {id: cuid(), name: 'apples', completed: false},
+           {id: cuid(), name: 'oranges', completed: false} ],
+  hideCheckedItems: false,
 
-function addItem() {
-  $('#js-shopping-list-form').submit(function (e){
-    e.preventDefault();
-      let listItem = $('#shopping-list-entry').val();
-      store.push({name:listItem, completed:false});
-      renderShoppingList();
-  })
 }
 
-function renderShoppingList() {
-  let html = '';
-  for (let i = 0; i < store.length; i++) {
-    html += generateListItem(store[i]);
+const generateItemElement = function (item) {
+  let itemTitle = `<span class='shopping-item shopping-item__checked'>${item.name}</span>`;
+  if (!item.checked) {
+    itemTitle = `<span class='shopping-item'>${item.name}</span>`;
   }
-  $('.shopping-list').html(html);
-}
-
-function generateListItem(item) {
-  return `<li>
-    <span class="shopping-item">${item.name}</span>
-    <div class="shopping-item-controls">
-      <button class="shopping-item-toggle">
-       <span class="button-label">check</span>
-      </button>
-      <button class="shoping-item-delete">
-       <span class="button-label">delete</span>
-      </button>
-    </div>
-    </li>` 
-}
-
-function markItem() {
-  $(".shopping-list").on("click", ".shopping-item-toggle", function (e){
-    $(this)
-      .closest(".shopping-item-controls")
-      .siblings(".shopping-item")
-      .toggleClass("shopping-item_checked")
-  })
-}
-
-function removeItem() {
-  $(".shopping-list").on("click", ".shopping-item-delete", function(e){
-    $(this).closest("li").remove()
-  })
-}
-
-$(markItem)
-$(removeItem)
-$(addItem)
-$(generateListItem)
   
+  return `
+    <li class='js-item-element' data-item-id='${item.id}'>
+      ${itemTitle}
+      <div class='shopping-item-controls'>
+        <button class='shopping-item-toggle js-item-toggle'>
+          <span class='button-label'>Check</span>
+        </button>
+        <button class='shopping-item-delete js-item-delete'>
+          <span class='button-label'>Delete</span>
+        </button>
+        <input type='text' placeholder='New item name' class='shopping-item-rename'></input>
+        <button class='shopping-item-rename js-item-rename'>
+          <span class='button-label'>Rename</span>
+        </button>
+      </div>
+    </li>`;
+};
+
+const generateShoppingItemsString = function (shoppingList) {
+  const items = shoppingList.map((item) => generateItemElement(item));
+  return items.join('');
+}
+
+const renderList = function () {
+  let items = [...store.items];
+  if (store.hideCheckedItems) {
+    items = items.filter(item => !item.checked);
+  }
+
+  const shoppingListItemsString = generateShoppingItemsString(items)
+  $('.js-shopping-list').html(shoppingListItemsString);
+}
+
+const addItemToList = function (itemName) {
+  store.items.push({id: cuid(), name: itemName, checked: false});
+}
+
+const handleNewItemSubmit = function () {
+  $('#js-shopping-list-form').submit(function (evt) {
+    evt.preventDefault();
+    const newItemName = $('.js-shopping-list-entry').val();
+    $('.js-shopping-list-entry').val('');
+    addItemToList(newItemName);
+    renderList();
+  })
+}
+
+const toggleCheckedForListItem = function (id) {
+  const foundItem = store.items.find(item => item.id === id);
+  foundItem.checked = !foundItem.checked;
+}
+
+const handleItemCheckClicked = function () {
+  $('.js-shopping-list').on('click', '.js-item-toggle', evt => {
+    const id = getItemIdFromElement(evt.currentTarget);
+    toggleCheckedForListItem();
+    renderList();
+  })
+}
+
+const getItemIdFromElement = function (item) {
+  return $(item)
+    .closest('.js-item-element')
+    .data('item-id')
+}
+
+const deleteListItem = function (id) {
+  const index = store.items.findIndex(item => item.id === id);
+  store.items.splice(index, 1);
+}
+
+const handleDeleteItemClicked = function () {
+  $('.js-shopping-list').on('click', '.js-item-delete', evt => {
+    const id = getItemIdFromElement(evt.currentTarget);
+    deleteListItem(id);
+    renderList();
+  })
+}
+
+const renameListItem = function (id, newName) {
+  const index = store.items.findIndex(item => item.id === id);
+  store.items[index].name = newName;
+}
+
+const handleRenameItemClicked = function () {
+  $('.js-shopping-list').on('click', '.js-item-rename', evt => {
+    const id = getItemIdFromElement(evt.currentTarget);
+    let newName = $('.shopping-item-rename').val();
+    renameListItem(id, newName);
+    renderList();
+  })
+}
+
+const toggleCheckedItemsFilter = function () {
+  store.hideCheckedItems = !store.hideCheckedItems;
+}
+
+const handleToggleFilterClick = function () {
+  $('.js-filter-checked').click(() => {
+    toggleCheckedItemsFilter();
+    renderList();
+  })
+}
+
+const runShoppingList = function () {
+  renderList();
+  handleNewItemSubmit();
+  handleItemCheckClicked();
+  handleDeleteItemClicked();
+  handleRenameItemClicked();
+  handleToggleFilterClick();
+}
+
+$(runShoppingList);
